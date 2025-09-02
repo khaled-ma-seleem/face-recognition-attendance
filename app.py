@@ -1,6 +1,7 @@
 """Real-time face detection and recognition application using Streamlit."""
 
 import streamlit as st
+import numpy as np
 import cv2
 import os
 import uuid
@@ -65,36 +66,38 @@ def process_frame_and_recognize(frame):
 
 
 def run_camera():
-    """Main camera loop for real-time face detection."""
-    cap = cv2.VideoCapture(CAMERA_INDEX)
-    
-    if not cap.isOpened():
-        st.error("Cannot access camera. Please check your camera connection.")
-        return
-    
+    """Main camera loop using Streamlit camera input (for Codespaces)."""
     frame_placeholder = st.empty()
-    
+
     try:
         while st.session_state["run_camera"]:
-            ret, frame = cap.read()
-            if not ret:
-                st.error("Failed to capture frame from camera.")
+            img_file_buffer = st.camera_input("Capture a picture")
+
+            if img_file_buffer is None:
+                st.warning("No image captured yet.")
                 break
-            
+
+            # Convert uploaded frame to OpenCV format
+            bytes_data = img_file_buffer.getvalue()
+            np_array = np.frombuffer(bytes_data, np.uint8)
+            frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+
             # Process frame
             processed_frame = process_frame_and_recognize(frame)
-            
+
             # Convert BGR to RGB for Streamlit display
             frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
             frame_placeholder.image(
-                frame_rgb, 
-                caption="Live Face Detection", 
+                frame_rgb,
+                caption="Captured Frame",
                 use_container_width=True
             )
-            
+
+            # Break after one capture (camera_input is not continuous)
+            break
+
     finally:
-        cap.release()
-        st.success("Camera stopped successfully.")
+        st.success("Camera session ended.")
 
 
 def main():
@@ -134,7 +137,7 @@ def main():
     
     # Status information
     if camera_active:
-        st.info("🔴 Camera is active. Uncheck 'Start Camera' to stop.")
+        st.info("📸 Use the camera widget below to capture a picture.")
         run_camera()
     else:
         st.info("📷 Click 'Start Camera' to begin face detection.")
