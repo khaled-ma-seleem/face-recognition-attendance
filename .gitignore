@@ -208,7 +208,7 @@ __marimo__/
 
 # Database and generated files
 *.db
-data/db_images/
+data/
 *.jpg
 *.png
 
